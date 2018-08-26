@@ -6,8 +6,7 @@ import com.cc.spring.formework.annotation.CCAutowired;
 import com.cc.spring.formework.annotation.CCController;
 import com.cc.spring.formework.annotation.CCRequestMapping;
 import com.cc.spring.formework.annotation.CCRequestParam;
-import com.cc.spring.formework.webmvc.GPModelAndView;
-
+import com.cc.spring.formework.webmvc.CCModelAndView;
 import java.io.IOException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -29,29 +28,29 @@ public class MyAction {
     IModifyService modifyService;
 
     @CCRequestMapping("/query.json")
-    public void query(
+    public CCModelAndView query(HttpServletRequest request, HttpServletResponse response,
                                 @CCRequestParam("name") String name){
         String result = queryService.query(name);
         System.out.println(result);
-//        return out(response,result);
+        return out(response,result);
     }
 
     @CCRequestMapping("/add*.json")
-    public GPModelAndView add(HttpServletRequest request, HttpServletResponse response,
+    public CCModelAndView add(HttpServletRequest request, HttpServletResponse response,
                               @CCRequestParam("name") String name, @CCRequestParam("addr") String addr){
         String result = modifyService.add(name,addr);
         return out(response,result);
     }
 
     @CCRequestMapping("/remove.json")
-    public GPModelAndView remove(HttpServletRequest request,HttpServletResponse response,
+    public CCModelAndView remove(HttpServletRequest request, HttpServletResponse response,
                                  @CCRequestParam("id") Integer id){
         String result = modifyService.remove(id);
         return out(response,result);
     }
 
     @CCRequestMapping("/edit.json")
-    public GPModelAndView edit(HttpServletRequest request,HttpServletResponse response,
+    public CCModelAndView edit(HttpServletRequest request,HttpServletResponse response,
                                @CCRequestParam("id") Integer id,
                                @CCRequestParam("name") String name){
         String result = modifyService.edit(id,name);
@@ -60,7 +59,7 @@ public class MyAction {
 
 
 
-    private GPModelAndView out(HttpServletResponse resp,String str){
+    private CCModelAndView out(HttpServletResponse resp,String str){
         try {
             resp.getWriter().write(str);
         } catch (IOException e) {

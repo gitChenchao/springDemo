@@ -14,6 +14,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class CCApplicationContext implements BeanFactory {
@@ -44,10 +45,6 @@ public class CCApplicationContext implements BeanFactory {
         doRegisty(beanDefinitions);
         //依赖注入(lazy-init = false)
         doAutowrited();
-
-        MyAction myAction = (MyAction)this.getBean("myAction");
-        myAction.query("任性的Tom老师");
-
     }
 
     //开执行自动化依赖注入
@@ -61,7 +58,7 @@ public class CCApplicationContext implements BeanFactory {
 
         for (Map.Entry<String,BeanWrapper> beanWrapperEntry : this.beanWrapperMap.entrySet()){
 
-            populatBean(beanWrapperEntry.getKey(),beanWrapperEntry.getValue().getWrapperInstance());
+            populatBean(beanWrapperEntry.getKey(),beanWrapperEntry.getValue().getWrappedInstance());
         }
     }
 
@@ -80,7 +77,7 @@ public class CCApplicationContext implements BeanFactory {
             }
             field.setAccessible(true);
             try {
-                field.set(instance,this.beanWrapperMap.get(autowiredBeanName).getWrapperInstance());
+                field.set(instance,this.beanWrapperMap.get(autowiredBeanName).getWrappedInstance());
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
@@ -124,39 +121,50 @@ public class CCApplicationContext implements BeanFactory {
      * 装饰器模式:
      * 1、保留原来的OOP关系
      * 2、我需要对它进行扩展，增强(为了以后的AOP打基础)
-     * @param beanNaame
+     * @param beanName
      * @return
      */
     @Override
-    public Object getBean(String beanNaame) {
-        BeanDefinition beanDefinition = this.beanDefinitionMap.get(beanNaame);
+    public Object getBean(String beanName) {
+        BeanDefinition  beanDefinition = this.beanDefinitionMap.get(beanName);
+
         String className = beanDefinition.getBeanClassName();
+
         try{
+
             //生成通知事件
             BeanPostProcessor beanPostProcessor = new BeanPostProcessor();
+
             Object instance = instantionBean(beanDefinition);
-            if(null == instance){return null;}
+            if(null == instance){ return  null;}
+
             //在实例初始化以前调用一次
-            beanPostProcessor.postProcessBeforeInitialization(instance,beanNaame);
+            beanPostProcessor.postProcessBeforeInitialization(instance,beanName);
+
             BeanWrapper beanWrapper = new BeanWrapper(instance);
             beanWrapper.setPostProcessor(beanPostProcessor);
-            this.beanWrapperMap.put(beanNaame,beanWrapper);
+            this.beanWrapperMap.put(beanName,beanWrapper);
+
             //在实例初始化以后调用一次
-            beanPostProcessor.postProcessAfterInitialization(instance,beanNaame);
-//            populatBean(beanNaame,instance);
-            //相当于给自己留有可操作的空间
-            return this.beanWrapperMap.get(beanNaame).getWrapperInstance();
+            beanPostProcessor.postProcessAfterInitialization(instance,beanName);
+
+//            populateBean(beanName,instance);
+
+            //通过这样一调用，相当于给我们自己留有了可操作的空间
+            return this.beanWrapperMap.get(beanName).getWrappedInstance();
         }catch (Exception e){
             e.printStackTrace();
         }
+
         return null;
+
     }
 
     private Object instantionBean(BeanDefinition beanDefinition){
         Object instance = null;
         String className = beanDefinition.getBeanClassName();
         try{
-
+            //因为根据Class才能确定一个类是否有实例
             if(this.beanCacheMap.containsKey(className)){
                 instance = this.beanCacheMap.get(className);
             }else{
@@ -169,5 +177,17 @@ public class CCApplicationContext implements BeanFactory {
 
         }
         return null;
+    }
+
+    public String[] getBeanDefinitionNames(){
+        return this.beanDefinitionMap.keySet().toArray(new String[this.beanDefinitionMap.size()]);
+    }
+
+    public int getBeanDefinitionCount(){
+        return this.beanDefinitionMap.size();
+    }
+
+    public Properties getConfig(){
+        return this.reader.getConfig();
     }
 }
